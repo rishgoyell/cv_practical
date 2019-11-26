@@ -3,6 +3,23 @@ from shapely.geometry.point import Point
 from skimage.draw import circle_perimeter_aa
 import matplotlib.pyplot as plt
 from models import *
+import time
+
+def load_model(var1, var2):
+
+    def decorator(func):
+        device='cuda' if torch.cuda.is_available() else 'cpu'
+        state = torch.load('model1.pth', map_location='cpu')
+        CP = circleParametrizer(spatial=True, device=device)
+        CP.load_state_dict(state['model'])
+        CP = CP.to(device)
+        CP.eval()
+        setattr(func, var1, CP)
+        setattr(func, var2, device)
+        return func
+
+    return decorator
+
 
 def draw_circle(img, row, col, rad):
     rr, cc, val = circle_perimeter_aa(row, col, rad)
@@ -29,11 +46,13 @@ def noisy_circle(size, radius, noise):
     return (row, col, rad), img
 
 
+@load_model("CP", "device")
 def find_circle(img):
     # Fill in this function
-    img = torch.tensor(img).view(1,1,img.shape[0],-1)
-    pred_params = CP(img)
-    return CP[0][0].item(), CP[0][1].item(), CP[0][2].item()
+    img = torch.FloatTensor(img).view(1,1,img.shape[0],-1).to(find_circle.device)
+    with torch.no_grad():
+        PP = find_circle.CP(img)
+    return int(PP[0][0].item()), int(PP[0][1].item()), int(PP[0][2].item())
 
 
 def iou(params0, params1):
@@ -60,10 +79,4 @@ def main():
 
 
 if __name__ == "__main__":
-    device='cuda' if torch.cuda.is_available() else 'cpu'
-    state = torch.load('model.pth', map_location='cpu')
-    CP = circleParametrizer(spatial=True, device=device)
-    CP.load_state_dict(state['model'])
-    CP = CP.to(device)
-    CP.eval()
     main()

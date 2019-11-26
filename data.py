@@ -1,8 +1,6 @@
-from main import *
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
-
+from main import noisy_circle
 
 def generate_data(num_samples):
         Y = torch.zeros(num_samples, 3)

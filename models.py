@@ -11,20 +11,16 @@ class Encoder(nn.Module):
         self.conv1 = nn.Conv2d(1, 8, 3, padding=(1, 1))
         self.conv2 = nn.Conv2d(8, 16, 3, padding=(1, 1))
         self.conv3 = nn.Conv2d(16, 32, 3, padding=(1, 1))
+        self.conv4 = nn.Conv2d(32, 32, 3, padding=(1, 1))
         self.drop = nn.Dropout(dropout)
 
     def forward(self, x):
         x = F.max_pool2d(self.drop(F.relu(self.conv1(x))), (2, 2))
         x = F.max_pool2d(self.drop(F.relu(self.conv2(x))), (2, 2))
         x = F.max_pool2d(F.relu(self.conv3(x)), (2, 2))
+        x = F.relu(self.conv4(x))
         return x
 
-    def num_flat_features(self, x):
-        size = x.size()[1:]  # all dimensions except the batch dimension
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
 
 class jointClassifier(nn.Module):
 
@@ -39,7 +35,7 @@ class jointClassifier(nn.Module):
 
 class circleParametrizer(nn.Module):
 
-    def __init__(self, spatial=False, device='cpu'):
+    def __init__(self, spatial=True, device='cpu'):
         super(circleParametrizer, self).__init__()
         self.encoder = Encoder(dropout = 0.2)
         self.classifier = jointClassifier(64 if spatial else 625)

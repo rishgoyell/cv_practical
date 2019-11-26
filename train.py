@@ -1,13 +1,13 @@
-from models import *
-from data import *
-from main import *
 import time
 import torch.optim as optim
 
-torch.manual_seed(0)
+from data import circlesData
+from models import circleParametrizer
+
+torch.manual_seed(111)
 
 def get_train_val_test_split(datasize):
-    datainds = torch.randperm(10000)
+    datainds = torch.randperm(datasize)
     split = [int(datasize * 0.8), int(datasize * 0.9)]
     return datainds[:split[0]], datainds[split[0]:split[1]], datainds[split[1]:]
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     CP = circleParametrizer(spatial=True, device=device).to(device)
 
     # define datasets
-    traininds, valinds, testinds = get_train_val_test_split(10000)
+    traininds, valinds, testinds = get_train_val_test_split(50000)
     traindata = circlesData('/scratch/rgoyal6/scale/data.pth', traininds)
     valdata = circlesData('/scratch/rgoyal6/scale/data.pth', valinds)
     testdata = circlesData('/scratch/rgoyal6/scale/data.pth', testinds)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     testloader = DataLoader(testdata, batch_size=32, shuffle=False, num_workers=2)
 
     # peripherals
-    num_epochs = 100
+    num_epochs = 150
     lr = 0.001
     criterion = nn.MSELoss()
     optimizer = optim.Adam(CP.parameters(), lr=lr, weight_decay=0.0005)
@@ -76,10 +76,13 @@ if __name__ == "__main__":
         if best_val_loss > val_loss and epoch > 20:
             print(f'Model saved at epoch {epoch}, val loss improved from {best_val_loss} to {val_loss}')
             best_val_loss = val_loss
-            state = {'model': CP.state_dict(), 'optimizer':optimizer, 'loss': best_val_loss, 'epoch': epoch}
+            state = {'model': CP.state_dict(), 'optimizer':optimizer.state_dict(), 'loss': best_val_loss, 'epoch': epoch}
         print(f'Epoch: {epoch}; Time: {time.time() - start_time : .2f}; Train Loss: {loss: .4f}; Val Loss: {val_loss : .4f}')
 
+    # performance on test
     CP.load_state_dict(state['model'])
     test_loss = run_epoch(CP, testloader, train=False)
     print(f'Test Loss: {test_loss}')
-    torch.save(state, 'model1.pth')
+
+    # save best model
+    torch.save(state, 'model.pth')
