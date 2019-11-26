@@ -9,7 +9,7 @@ def load_model(var1, var2):
 
     def decorator(func):
         device='cuda' if torch.cuda.is_available() else 'cpu'
-        state = torch.load('model1.pth', map_location='cpu')
+        state = torch.load('model.pth', map_location='cpu')
         CP = circleParametrizer(spatial=True, device=device)
         CP.load_state_dict(state['model'])
         CP = CP.to(device)
