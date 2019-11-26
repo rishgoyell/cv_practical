@@ -2,7 +2,7 @@ import numpy as np
 from shapely.geometry.point import Point
 from skimage.draw import circle_perimeter_aa
 import matplotlib.pyplot as plt
-
+from models import *
 
 def draw_circle(img, row, col, rad):
     rr, cc, val = circle_perimeter_aa(row, col, rad)
@@ -31,7 +31,9 @@ def noisy_circle(size, radius, noise):
 
 def find_circle(img):
     # Fill in this function
-    return 100, 100, 30
+    img = torch.tensor(img).view(1,1,img.shape[0],-1)
+    pred_params = CP(img)
+    return CP[0][0].item(), CP[0][1].item(), CP[0][2].item()
 
 
 def iou(params0, params1):
@@ -55,3 +57,13 @@ def main():
         results.append(iou(params, detected))
     results = np.array(results)
     print((results > 0.7).mean())
+
+
+if __name__ == "__main__":
+    device='cuda' if torch.cuda.is_available() else 'cpu'
+    state = torch.load('model.pth', map_location='cpu')
+    CP = circleParametrizer(spatial=True, device=device)
+    CP.load_state_dict(state['model'])
+    CP = CP.to(device)
+    CP.eval()
+    main()
